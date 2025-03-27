@@ -77,14 +77,26 @@ async function register(userData) {
         };
     }
 }
+function logError(context, error) {
+    console.error(`[AUTH ERROR] ${context}:`, error);
+
+    // Log additional details
+    if (error.response) {
+        console.error('Response data:', error.response.data);
+        console.error('Response status:', error.response.status);
+        console.error('Response headers:', error.response.headers);
+    }
+}
 
 // Authenticate with Telegram
 async function authenticateWithTelegram(role) {
     try {
         // Get Telegram Web App init data
         const initData = tg.initData;
+        console.log('[AUTH] Telegram Init Data:', initData);
 
         if (!initData) {
+            logError('Telegram Auth', 'Telegram data not available');
             throw new Error('Telegram data not available');
         }
 
@@ -94,12 +106,31 @@ async function authenticateWithTelegram(role) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ initData, role })
+            body: JSON.stringify({
+                initData,
+                role,
+                // Include more diagnostic info
+                userAgent: navigator.userAgent,
+                platform: navigator.platform
+            })
         });
 
-        const data = await response.json();
+        // Log full response details
+        console.log('[AUTH] Response Status:', response.status);
+        const responseText = await response.text();
+        console.log('[AUTH] Response Body:', responseText);
+
+        // Parse response
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            logError('JSON Parse', parseError);
+            throw new Error('Failed to parse server response');
+        }
 
         if (!data.success) {
+            logError('Telegram Authentication', data.error || 'Unknown authentication error');
             throw new Error(data.error || 'Authentication failed');
         }
 
@@ -108,15 +139,17 @@ async function authenticateWithTelegram(role) {
         localStorage.setItem('fitTrainerAuthToken', authToken);
         localStorage.setItem('userRole', data.user.role);
 
+        console.log('[AUTH] Successfully authenticated');
         return data;
     } catch (error) {
-        console.error('Telegram authentication error:', error);
+        logError('Telegram Authentication', error);
         return {
             success: false,
             error: error.message || 'Authentication failed. Please try again.'
         };
     }
 }
+
 
 // Logout user
 function logout() {

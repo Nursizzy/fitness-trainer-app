@@ -9,14 +9,24 @@ const crypto = require('crypto');
  * @returns {object|null} The validated user data or null if validation fails
  */
 function validateTelegramWebAppData(initDataString) {
-    if (!initDataString) return null;
+    console.log('Raw initData:', initDataString);
+
+    if (!initDataString) {
+        console.error('No initData provided');
+        return null;
+    }
 
     try {
         // Parse the query string
         const urlParams = new URLSearchParams(initDataString);
         const hash = urlParams.get('hash');
 
-        if (!hash) return null;
+        console.log('Extracted hash:', hash);
+
+        if (!hash) {
+            console.error('No hash found in initData');
+            return null;
+        }
 
         // Remove hash from the data to check
         urlParams.delete('hash');
@@ -27,22 +37,32 @@ function validateTelegramWebAppData(initDataString) {
             .map(([key, value]) => `${key}=${value}`)
             .join('\n');
 
+        console.log('Sorted params:', params);
+
         // Create data check hash
         const secretKey = crypto.createHmac('sha256', 'WebAppData')
             .update(process.env.TELEGRAM_BOT_TOKEN)
             .digest();
 
+        console.log('Secret key:', secretKey.toString('hex'));
+
         const dataCheckString = crypto.createHmac('sha256', secretKey)
             .update(params)
             .digest('hex');
 
+        console.log('Calculated hash:', dataCheckString);
+        console.log('Received hash:', hash);
+
         // Verify the hash
         if (dataCheckString !== hash) {
+            console.error('Hash validation failed');
             return null;
         }
 
         // Parse user data
         const userData = JSON.parse(urlParams.get('user') || '{}');
+        console.log('Parsed user data:', userData);
+
         return userData;
     } catch (error) {
         console.error('Telegram validation error:', error);
