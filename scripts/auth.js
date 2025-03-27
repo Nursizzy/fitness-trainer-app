@@ -1,7 +1,7 @@
 // Authentication module for FitTrainer
 
 // API URL - local backend
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://fitness-trainer-app.onrender.com/api';
 
 // Telegram instance
 const tg = window.Telegram.WebApp;
