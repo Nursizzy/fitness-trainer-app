@@ -1,121 +1,65 @@
 // Trainer module for FitTrainer
 
-// API URL (replace with your actual API endpoint in production)
-const API_BASE_URL = 'https://api.example.com';
+// API URL - local backend
+const API_BASE_URL = 'http://localhost:5000/api';
 
-// Demo data for trainer
-const demoClients = [
-    {
-        id: 'client1',
-        name: 'John Smith',
-        email: 'john@example.com',
-        program: 'Strength Building',
-        progress: {
-            programWeek: 2,
-            lastWorkout: '2025-03-26',
-            completionRate: 85
-        }
-    },
-    {
-        id: 'client2',
-        name: 'Sarah Johnson',
-        email: 'sarah@example.com',
-        program: 'Weight Loss',
-        progress: {
-            programWeek: 4,
-            lastWorkout: '2025-03-24',
-            completionRate: 70
-        }
-    },
-    {
-        id: 'client3',
-        name: 'Mike Peterson',
-        email: 'mike@example.com',
-        program: 'Muscle Gain',
-        progress: {
-            programWeek: 1,
-            lastWorkout: '2025-03-27',
-            completionRate: 95
-        }
-    }
-];
-
-const demoPrograms = [
-    {
-        id: 'program1',
-        name: 'Strength Building',
-        description: 'Focus on building overall strength with compound movements.',
-        weeks: 8,
-        workoutsPerWeek: 4,
-        activeClients: 3
-    },
-    {
-        id: 'program2',
-        name: 'Weight Loss',
-        description: 'High intensity workouts with cardio focus for maximum calorie burn.',
-        weeks: 12,
-        workoutsPerWeek: 5,
-        activeClients: 2
-    },
-    {
-        id: 'program3',
-        name: 'Muscle Gain',
-        description: 'Hypertrophy-focused program with progressive overload.',
-        weeks: 10,
-        workoutsPerWeek: 5,
-        activeClients: 1
-    }
-];
-
-const demoExercises = [
-    {
-        id: 'exercise1',
-        name: 'Barbell Squat',
-        muscleGroup: 'Legs',
-        description: 'Compound movement targeting quads, hamstrings, and glutes.',
-        difficulty: 'Intermediate'
-    },
-    {
-        id: 'exercise2',
-        name: 'Bench Press',
-        muscleGroup: 'Chest',
-        description: 'Compound pushing movement for chest, shoulders, and triceps.',
-        difficulty: 'Intermediate'
-    },
-    {
-        id: 'exercise3',
-        name: 'Deadlift',
-        muscleGroup: 'Back',
-        description: 'Compound pull movement targeting the posterior chain.',
-        difficulty: 'Advanced'
-    },
-    {
-        id: 'exercise4',
-        name: 'Pull-ups',
-        muscleGroup: 'Back',
-        description: 'Upper body pull movement for back and biceps.',
-        difficulty: 'Intermediate'
-    }
-];
+// Get auth token
+const getAuthToken = () => localStorage.getItem('fitTrainerAuthToken');
 
 // Get trainer's clients
 async function getClients() {
     try {
-        // In a real app, this would be an API call
-        // For demo, we'll return dummy data
+        const token = getAuthToken();
 
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 800));
+        const response = await fetch(`${API_BASE_URL}/trainer/clients`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
 
-        return {
-            success: true,
-            clients: demoClients
-        };
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to fetch clients');
+        }
+
+        return data;
     } catch (error) {
         console.error('Get clients error:', error);
         return {
             success: false,
-            error: 'Failed to fetch clients. Please try again.'
+            error: error.message || 'Failed to fetch clients. Please try again.'
+        };
+    }
+}
+
+// Get a specific client
+async function getClient(clientId) {
+    try {
+        const token = getAuthToken();
+
+        const response = await fetch(`${API_BASE_URL}/trainer/clients/${clientId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to fetch client');
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Get client error:', error);
+        return {
+            success: false,
+            error: error.message || 'Failed to fetch client. Please try again.'
         };
     }
 }
@@ -123,21 +67,57 @@ async function getClients() {
 // Get trainer's programs
 async function getPrograms() {
     try {
-        // In a real app, this would be an API call
-        // For demo, we'll return dummy data
+        const token = getAuthToken();
 
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 800));
+        const response = await fetch(`${API_BASE_URL}/trainer/programs`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
 
-        return {
-            success: true,
-            programs: demoPrograms
-        };
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to fetch programs');
+        }
+
+        return data;
     } catch (error) {
         console.error('Get programs error:', error);
         return {
             success: false,
-            error: 'Failed to fetch programs. Please try again.'
+            error: error.message || 'Failed to fetch programs. Please try again.'
+        };
+    }
+}
+
+// Get a specific program
+async function getProgram(programId) {
+    try {
+        const token = getAuthToken();
+
+        const response = await fetch(`${API_BASE_URL}/trainer/programs/${programId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to fetch program');
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Get program error:', error);
+        return {
+            success: false,
+            error: error.message || 'Failed to fetch program. Please try again.'
         };
     }
 }
@@ -145,21 +125,28 @@ async function getPrograms() {
 // Get trainer's exercises
 async function getExercises() {
     try {
-        // In a real app, this would be an API call
-        // For demo, we'll return dummy data
+        const token = getAuthToken();
 
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 800));
+        const response = await fetch(`${API_BASE_URL}/trainer/exercises`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
 
-        return {
-            success: true,
-            exercises: demoExercises
-        };
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to fetch exercises');
+        }
+
+        return data;
     } catch (error) {
         console.error('Get exercises error:', error);
         return {
             success: false,
-            error: 'Failed to fetch exercises. Please try again.'
+            error: error.message || 'Failed to fetch exercises. Please try again.'
         };
     }
 }
@@ -167,34 +154,29 @@ async function getExercises() {
 // Create a new program
 async function createProgram(programData) {
     try {
-        // In a real app, this would be an API call
-        // For demo, we'll simulate success
+        const token = getAuthToken();
 
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1200));
+        const response = await fetch(`${API_BASE_URL}/trainer/programs`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(programData)
+        });
 
-        // Create new program object
-        const newProgram = {
-            id: 'program' + (demoPrograms.length + 1),
-            name: programData.name,
-            description: programData.description,
-            weeks: programData.weeks,
-            workoutsPerWeek: programData.workoutsPerWeek,
-            activeClients: 0
-        };
+        const data = await response.json();
 
-        // Add to demo programs (in real app, this would be stored in DB)
-        demoPrograms.push(newProgram);
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to create program');
+        }
 
-        return {
-            success: true,
-            program: newProgram
-        };
+        return data;
     } catch (error) {
         console.error('Create program error:', error);
         return {
             success: false,
-            error: 'Failed to create program. Please try again.'
+            error: error.message || 'Failed to create program. Please try again.'
         };
     }
 }
@@ -202,33 +184,29 @@ async function createProgram(programData) {
 // Add a new exercise
 async function addExercise(exerciseData) {
     try {
-        // In a real app, this would be an API call
-        // For demo, we'll simulate success
+        const token = getAuthToken();
 
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1200));
+        const response = await fetch(`${API_BASE_URL}/trainer/exercises`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(exerciseData)
+        });
 
-        // Create new exercise object
-        const newExercise = {
-            id: 'exercise' + (demoExercises.length + 1),
-            name: exerciseData.name,
-            muscleGroup: exerciseData.muscleGroup,
-            description: exerciseData.description,
-            difficulty: exerciseData.difficulty
-        };
+        const data = await response.json();
 
-        // Add to demo exercises (in real app, this would be stored in DB)
-        demoExercises.push(newExercise);
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to add exercise');
+        }
 
-        return {
-            success: true,
-            exercise: newExercise
-        };
+        return data;
     } catch (error) {
         console.error('Add exercise error:', error);
         return {
             success: false,
-            error: 'Failed to add exercise. Please try again.'
+            error: error.message || 'Failed to add exercise. Please try again.'
         };
     }
 }
@@ -236,37 +214,53 @@ async function addExercise(exerciseData) {
 // Add new client
 async function addClient(clientData) {
     try {
-        // In a real app, this would be an API call
-        // For demo, we'll simulate success
+        const token = getAuthToken();
 
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1200));
+        // This is a bit tricky since we need to:
+        // 1. Create a user account first
+        // 2. Then assign the client to this trainer
 
-        // Create new client object
-        const newClient = {
-            id: 'client' + (demoClients.length + 1),
-            name: clientData.name,
-            email: clientData.email,
-            program: clientData.program || 'None assigned',
-            progress: {
-                programWeek: 0,
-                lastWorkout: 'N/A',
-                completionRate: 0
-            }
-        };
-
-        // Add to demo clients (in real app, this would be stored in DB)
-        demoClients.push(newClient);
+        // For now, we'll handle this with a placeholder
+        console.log('Adding client:', clientData);
 
         return {
-            success: true,
-            client: newClient
+            success: false,
+            error: 'This feature is not fully implemented yet'
         };
     } catch (error) {
         console.error('Add client error:', error);
         return {
             success: false,
-            error: 'Failed to add client. Please try again.'
+            error: error.message || 'Failed to add client. Please try again.'
+        };
+    }
+}
+
+// Assign client to trainer
+async function assignClient(clientId) {
+    try {
+        const token = getAuthToken();
+
+        const response = await fetch(`${API_BASE_URL}/trainer/clients/${clientId}/assign`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to assign client');
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Assign client error:', error);
+        return {
+            success: false,
+            error: error.message || 'Failed to assign client. Please try again.'
         };
     }
 }
@@ -274,35 +268,58 @@ async function addClient(clientData) {
 // Assign program to client
 async function assignProgram(clientId, programId) {
     try {
-        // In a real app, this would be an API call
-        // For demo, we'll simulate success
+        const token = getAuthToken();
 
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        const response = await fetch(`${API_BASE_URL}/trainer/clients/${clientId}/programs/${programId}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
 
-        // Find client and program
-        const client = demoClients.find(c => c.id === clientId);
-        const program = demoPrograms.find(p => p.id === programId);
+        const data = await response.json();
 
-        if (!client || !program) {
-            throw new Error('Client or program not found');
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to assign program');
         }
 
-        // Update client's program
-        client.program = program.name;
-        client.progress.programWeek = 1;
-
-        // Increment program's active clients
-        program.activeClients++;
-
-        return {
-            success: true
-        };
+        return data;
     } catch (error) {
         console.error('Assign program error:', error);
         return {
             success: false,
-            error: 'Failed to assign program. Please try again.'
+            error: error.message || 'Failed to assign program. Please try again.'
+        };
+    }
+}
+
+// Create a workout for a client
+async function createWorkout(workoutData) {
+    try {
+        const token = getAuthToken();
+
+        const response = await fetch(`${API_BASE_URL}/workout`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(workoutData)
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to create workout');
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Create workout error:', error);
+        return {
+            success: false,
+            error: error.message || 'Failed to create workout. Please try again.'
         };
     }
 }
@@ -310,28 +327,28 @@ async function assignProgram(clientId, programId) {
 // Get analytics data
 async function getAnalytics() {
     try {
-        // In a real app, this would be an API call
-        // For demo, we'll return dummy analytics data
+        const token = getAuthToken();
 
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        return {
-            success: true,
-            analytics: {
-                totalClients: demoClients.length,
-                activeClients: demoClients.length,
-                averageCompletionRate: 83,
-                workoutsCompleted: 45,
-                topProgram: 'Strength Building',
-                clientGrowth: 25 // percentage growth last month
+        const response = await fetch(`${API_BASE_URL}/trainer/analytics`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
             }
-        };
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to fetch analytics');
+        }
+
+        return data;
     } catch (error) {
         console.error('Get analytics error:', error);
         return {
             success: false,
-            error: 'Failed to fetch analytics. Please try again.'
+            error: error.message || 'Failed to fetch analytics. Please try again.'
         };
     }
 }
@@ -339,11 +356,15 @@ async function getAnalytics() {
 // Export trainer functions
 window.trainer = {
     getClients,
+    getClient,
+    assignClient,
     getPrograms,
-    getExercises,
+    getProgram,
     createProgram,
+    getExercises,
     addExercise,
     addClient,
     assignProgram,
+    createWorkout,
     getAnalytics
 };

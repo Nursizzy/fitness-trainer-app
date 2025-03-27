@@ -1,5 +1,11 @@
 // Workout module for FitTrainer
 
+// API URL - local backend
+const API_BASE_URL = 'http://localhost:5000/api';
+
+// Get auth token
+const getAuthToken = () => localStorage.getItem('fitTrainerAuthToken');
+
 // Current workout session data
 let currentWorkout = null;
 let currentExerciseIndex = 0;
@@ -10,38 +16,65 @@ let workoutTimerInterval = null;
 let exerciseLog = [];
 
 // Start a workout session
-function startWorkoutSession(workout) {
-    // Set current workout
-    currentWorkout = workout;
-    currentExerciseIndex = 0;
+async function startWorkoutSession(workoutId) {
+    try {
+        // Fetch the workout from the backend
+        const token = getAuthToken();
 
-    // Reset logs
-    exerciseLog = [];
-
-    // Start workout timer
-    workoutStartTime = new Date();
-    startWorkoutTimer();
-
-    // Initialize exercise log
-    currentWorkout.exercises.forEach(exercise => {
-        exerciseLog.push({
-            name: exercise.name,
-            sets: Array(exercise.sets).fill().map(() => ({
-                planned: {
-                    reps: exercise.reps,
-                    weight: exercise.weight
-                },
-                actual: {
-                    reps: exercise.reps,
-                    weight: exercise.weight
-                },
-                completed: false
-            }))
+        const response = await fetch(`${API_BASE_URL}/workout/${workoutId}/start`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
         });
-    });
 
-    // Load first exercise
-    loadExercise(currentExerciseIndex);
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to start workout');
+        }
+
+        // Set current workout
+        currentWorkout = data.workout;
+        currentExerciseIndex = 0;
+
+        // Reset logs
+        exerciseLog = [];
+
+        // Start workout timer
+        workoutStartTime = new Date();
+        startWorkoutTimer();
+
+        // Initialize exercise log
+        currentWorkout.exercises.forEach(exercise => {
+            exerciseLog.push({
+                name: exercise.name,
+                sets: Array(exercise.sets).fill().map(() => ({
+                    planned: {
+                        reps: exercise.reps,
+                        weight: exercise.weight
+                    },
+                    actual: {
+                        reps: exercise.reps,
+                        weight: exercise.weight
+                    },
+                    completed: false
+                }))
+            });
+        });
+
+        // Load first exercise
+        loadExercise(currentExerciseIndex);
+
+        return { success: true };
+    } catch (error) {
+        console.error('Start workout session error:', error);
+        return {
+            success: false,
+            error: error.message || 'Failed to start workout. Please try again.'
+        };
+    }
 }
 
 // Load exercise at specified index
@@ -279,84 +312,93 @@ function updateNavigationButtons() {
 }
 
 // Complete workout session
-function completeWorkoutSession() {
-    // Stop timers
-    if (restTimerInterval) {
-        clearInterval(restTimerInterval);
-    }
+async function completeWorkoutSession() {
+    try {
+        // Stop timers
+        if (restTimerInterval) {
+            clearInterval(restTimerInterval);
+        }
 
-    if (workoutTimerInterval) {
-        clearInterval(workoutTimerInterval);
-    }
+        if (workoutTimerInterval) {
+            clearInterval(workoutTimerInterval);
+        }
 
-    // Calculate workout duration
-    const workoutDuration = Math.floor((new Date() - workoutStartTime) / 1000);
+        // Calculate workout duration
+        const workoutDuration = Math.floor((new Date() - workoutStartTime) / 1000);
 
-    // Prepare workout summary
-    const workoutSummary = {
-        id: currentWorkout.id,
-        title: currentWorkout.title,
-        duration: workoutDuration,
-        completedAt: new Date().toISOString(),
-        exercises: exerciseLog
-    };
+        // Format exercise data for the API
+        const exerciseData = exerciseLog.map((exercise, index) => ({
+            exerciseId: currentWorkout.exercises[index].id, // We need the actual ID from the exercise
+            sets: exercise.sets.map((set, setIndex) => ({
+                setNumber: setIndex + 1,
+                plannedReps: set.planned.reps,
+                actualReps: set.actual.reps,
+                plannedWeight: set.planned.weight,
+                actualWeight: set.actual.weight,
+                completed: set.completed,
+                notes: ''
+            }))
+        }));
 
-    // In a real app, you would send this data to your API
-    console.log('Workout summary:', workoutSummary);
+        // Send completion data to backend
+        const token = getAuthToken();
 
-    // Call completeWorkout function from client module
-    if (window.client && window.client.completeWorkout) {
-        window.client.completeWorkout(currentWorkout.id, workoutSummary)
-            .then(result => {
-                if (result.success) {
-                    // Show completion popup
-                    const tg = window.Telegram.WebApp;
-                    tg.showPopup({
-                        title: 'Workout Complete!',
-                        message: `Great job! You've earned ${result.points} fitness points!`,
-                        buttons: [
-                            { id: 'ok', type: 'ok', text: 'Done' }
-                        ]
-                    }, () => {
-                        // Return to dashboard
-                        const appState = window.appState || {};
-                        const screenName = appState.userRole === 'trainer' ? 'trainerDashboard' : 'clientDashboard';
-
-                        if (window.showScreen) {
-                            window.showScreen(screenName);
-                        }
-                    });
-                } else {
-                    // Show error
-                    const tg = window.Telegram.WebApp;
-                    tg.showAlert('Error saving workout: ' + (result.error || 'Unknown error'));
-                }
+        const response = await fetch(`${API_BASE_URL}/workout/${currentWorkout.id}/complete`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                duration: workoutDuration,
+                exerciseData: exerciseData
             })
-            .catch(error => {
-                console.error('Error completing workout:', error);
+        });
 
-                // Show error
-                const tg = window.Telegram.WebApp;
-                tg.showAlert('Error saving workout. Please try again.');
-            });
-    } else {
-        // Fallback if client module not available
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to complete workout');
+        }
+
+        // Show completion popup
         const tg = window.Telegram.WebApp;
         tg.showPopup({
             title: 'Workout Complete!',
-            message: 'Great job completing your workout!',
+            message: `Great job! You've earned ${data.points || 0} fitness points!`,
             buttons: [
                 { id: 'ok', type: 'ok', text: 'Done' }
             ]
         }, () => {
             // Return to dashboard
-            const appState = window.appState || {};
-            const screenName = appState.userRole === 'trainer' ? 'trainerDashboard' : 'clientDashboard';
+            const userRole = localStorage.getItem('userRole');
+            const screenName = userRole === 'trainer' ? 'trainerDashboard' : 'clientDashboard';
 
             if (window.showScreen) {
                 window.showScreen(screenName);
             }
+
+            // Show achievements if any
+            if (data.achievements && data.achievements.length > 0) {
+                setTimeout(() => {
+                    const achievementNames = data.achievements.map(a => a.name).join(', ');
+                    tg.showAlert(`🏆 New achievement(s) unlocked: ${achievementNames}`);
+                }, 500);
+            }
         });
+
+        return { success: true };
+    } catch (error) {
+        console.error('Complete workout error:', error);
+
+        // Show error
+        const tg = window.Telegram.WebApp;
+        tg.showAlert(`Error: ${error.message || 'Failed to complete workout'}`);
+
+        return {
+            success: false,
+            error: error.message || 'Failed to complete workout. Please try again.'
+        };
     }
 }
 

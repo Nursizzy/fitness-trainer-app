@@ -13,12 +13,15 @@ const user = tg.initDataUnsafe.user || {};
 // App state
 let appState = {
     currentScreen: 'loading',
-    userRole: null,
-    isAuthenticated: false,
+    userRole: localStorage.getItem('userRole'),
+    isAuthenticated: !!localStorage.getItem('fitTrainerAuthToken'),
     userData: {},
     currentWorkout: null,
     currentExerciseIndex: 0
 };
+
+// Make appState available to other modules
+window.appState = appState;
 
 // DOM Elements
 const screens = {
@@ -30,6 +33,9 @@ const screens = {
     createProgram: document.getElementById('create-program'),
     addExercise: document.getElementById('add-exercise')
 };
+
+// Make showScreen available globally
+window.showScreen = showScreen;
 
 // Show/hide screens
 function showScreen(screenName) {
@@ -111,11 +117,11 @@ function initApp() {
 function setupEventListeners() {
     // Role selection buttons
     document.getElementById('trainer-role').addEventListener('click', () => {
-        setUserRole('trainer');
+        selectRole('trainer');
     });
 
     document.getElementById('client-role').addEventListener('click', () => {
-        setUserRole('client');
+        selectRole('client');
     });
 
     // Telegram back button handler
@@ -130,15 +136,15 @@ function setupEventListeners() {
 
     // Workout navigation buttons
     document.getElementById('next-exercise').addEventListener('click', () => {
-        nextExercise();
+        window.workout.nextExercise();
     });
 
     document.getElementById('prev-exercise').addEventListener('click', () => {
-        prevExercise();
+        window.workout.prevExercise();
     });
 
     document.getElementById('complete-workout').addEventListener('click', () => {
-        completeWorkout();
+        window.workout.completeWorkoutSession();
     });
 
     // Action buttons
@@ -160,39 +166,75 @@ function setupEventListeners() {
 }
 
 // Check if user is authenticated
-function checkAuthentication() {
-    // For demo purposes, we'll simulate an API call
-    setTimeout(() => {
-        // Simulate no authentication
-        appState.isAuthenticated = false;
-        showScreen('auth');
-    }, 1500);
+async function checkAuthentication() {
+    if (appState.isAuthenticated && appState.userRole) {
+        try {
+            // Get user data
+            const userData = await window.auth.getCurrentUser();
+
+            if (userData) {
+                appState.userData = userData;
+
+                // Update UI with user info
+                updateUserInfo();
+
+                // Load appropriate dashboard based on role
+                if (appState.userRole === 'trainer') {
+                    await loadTrainerData();
+                    showScreen('trainerDashboard');
+                } else {
+                    await loadClientData();
+                    showScreen('clientDashboard');
+                }
+
+                return;
+            }
+        } catch (error) {
+            console.error('Authentication check error:', error);
+            // If there's an error, we'll proceed to the auth screen
+        }
+    }
+
+    // If we get here, user is not authenticated
+    showScreen('auth');
 }
 
-// Set user role and proceed to dashboard
-function setUserRole(role) {
+// Handle role selection and proceed to authentication
+async function selectRole(role) {
+    // Store selected role temporarily
     appState.userRole = role;
-    appState.isAuthenticated = true;
 
-    // Store user role (in a real app, this would be done via API)
-    appState.userData = {
-        id: user.id || 'demo-user',
-        username: user.username || 'demo-user',
-        firstName: user.first_name || 'Demo',
-        lastName: user.last_name || 'User',
-        role: role
-    };
+    try {
+        // Show loading indicator
+        showScreen('loading');
 
-    // Update UI with user info
-    updateUserInfo();
+        // Attempt Telegram authentication
+        const result = await window.auth.authenticateWithTelegram(role);
 
-    // Navigate to appropriate dashboard
-    if (role === 'trainer') {
-        loadTrainerData();
-        showScreen('trainerDashboard');
-    } else {
-        loadClientData();
-        showScreen('clientDashboard');
+        if (result.success) {
+            appState.isAuthenticated = true;
+            appState.userData = result.user;
+
+            // Update UI with user info
+            updateUserInfo();
+
+            // Navigate to appropriate dashboard
+            if (role === 'trainer') {
+                await loadTrainerData();
+                showScreen('trainerDashboard');
+            } else {
+                await loadClientData();
+                showScreen('clientDashboard');
+            }
+        } else {
+            // Authentication failed
+            tg.showAlert(result.error || 'Authentication failed. Please try again.');
+            showScreen('auth');
+        }
+    } catch (error) {
+        console.error('Role selection error:', error);
+        tg.showAlert('Authentication error. Please try again.');
+        showScreen('auth');
     }
 }
 
@@ -202,12 +244,19 @@ function updateUserInfo() {
     const userData = appState.userData;
 
     userInfoElements.forEach(element => {
-        element.innerHTML = `
-            <div>
-                <strong>${userData.firstName} ${userData.lastName}</strong>
-                ${userData.username ? `(@${userData.username})` : ''}
-            </div>
-        `;
+        if (userData) {
+            let displayName = userData.name ||
+                ((userData.firstName || '') + ' ' + (userData.lastName || '')).trim();
+
+            element.innerHTML = `
+                <div>
+                    <strong>${displayName}</strong>
+                    ${userData.username ? `(@${userData.username})` : ''}
+                </div>
+            `;
+        } else {
+            element.innerHTML = `<div>User</div>`;
+        }
     });
 }
 
@@ -239,292 +288,459 @@ function handleBackButton() {
     }
 }
 
-// Load demo data for trainer
-function loadTrainerData() {
-    // For demo purposes, we'll load static data
+// Load data for trainer dashboard
+async function loadTrainerData() {
+    try {
+        // Show loading indicators or placeholders
+        document.getElementById('clients-list').innerHTML = '<div class="loader"></div>';
+        document.getElementById('programs-list').innerHTML = '<div class="loader"></div>';
+        document.getElementById('exercises-list').innerHTML = '<div class="loader"></div>';
+
+        // Fetch clients
+        const clientsResponse = await window.trainer.getClients();
+        if (clientsResponse.success) {
+            renderClientsList(clientsResponse.clients);
+        } else {
+            document.getElementById('clients-list').innerHTML = `<p>Error loading clients: ${clientsResponse.error}</p>`;
+        }
+
+        // Fetch programs
+        const programsResponse = await window.trainer.getPrograms();
+        if (programsResponse.success) {
+            renderProgramsList(programsResponse.programs);
+        } else {
+            document.getElementById('programs-list').innerHTML = `<p>Error loading programs: ${programsResponse.error}</p>`;
+        }
+
+        // Fetch exercises
+        const exercisesResponse = await window.trainer.getExercises();
+        if (exercisesResponse.success) {
+            renderExercisesList(exercisesResponse.exercises);
+        } else {
+            document.getElementById('exercises-list').innerHTML = `<p>Error loading exercises: ${exercisesResponse.error}</p>`;
+        }
+
+        // Fetch analytics
+        await loadAnalytics();
+    } catch (error) {
+        console.error('Load trainer data error:', error);
+        tg.showAlert('Error loading data. Please try refreshing the app.');
+    }
+}
+
+// Render trainer's clients list
+function renderClientsList(clients) {
     const clientsList = document.getElementById('clients-list');
-    clientsList.innerHTML = `
-        <div class="list-item">
-            <h3>John Smith</h3>
-            <p>Program: Strength Building - Week 2</p>
-            <p>Last workout: Yesterday</p>
-        </div>
-        <div class="list-item">
-            <h3>Sarah Johnson</h3>
-            <p>Program: Weight Loss - Week 4</p>
-            <p>Last workout: 3 days ago</p>
-        </div>
-        <div class="list-item">
-            <h3>Mike Peterson</h3>
-            <p>Program: Muscle Gain - Week 1</p>
-            <p>Last workout: Today</p>
-        </div>
-    `;
 
-    const programsList = document.getElementById('programs-list');
-    programsList.innerHTML = `
-        <div class="list-item">
-            <h3>Strength Building</h3>
-            <p>8 week program, 4 workouts/week</p>
-            <p>Active clients: 3</p>
-        </div>
-        <div class="list-item">
-            <h3>Weight Loss</h3>
-            <p>12 week program, 5 workouts/week</p>
-            <p>Active clients: 2</p>
-        </div>
-        <div class="list-item">
-            <h3>Muscle Gain</h3>
-            <p>10 week program, 5 workouts/week</p>
-            <p>Active clients: 1</p>
-        </div>
-    `;
+    if (!clients || clients.length === 0) {
+        clientsList.innerHTML = '<p>You have no clients yet.</p>';
+        return;
+    }
 
-    const exercisesList = document.getElementById('exercises-list');
-    exercisesList.innerHTML = `
-        <div class="list-item">
-            <h3>Barbell Squat</h3>
-            <p>Muscle group: Legs</p>
-        </div>
-        <div class="list-item">
-            <h3>Bench Press</h3>
-            <p>Muscle group: Chest</p>
-        </div>
-        <div class="list-item">
-            <h3>Deadlift</h3>
-            <p>Muscle group: Back</p>
-        </div>
-        <div class="list-item">
-            <h3>Pull-ups</h3>
-            <p>Muscle group: Back</p>
-        </div>
-    `;
-}
+    let html = '';
 
-// Load demo data for client
-function loadClientData() {
-    // For demo purposes, we'll load static data
-    const upcomingWorkouts = document.getElementById('upcoming-workouts');
-    upcomingWorkouts.innerHTML = `
-        <h3>Upcoming Workouts</h3>
-        <div class="list-item">
-            <h3>Upper Body Strength</h3>
-            <p>Today at 6:00 PM</p>
-            <button class="action-btn" onclick="startWorkout('upper-body')">Start Workout</button>
-        </div>
-        <div class="list-item">
-            <h3>Leg Day</h3>
-            <p>Tomorrow at 5:30 PM</p>
-        </div>
-        <div class="list-item">
-            <h3>Core Workout</h3>
-            <p>Friday at 7:00 PM</p>
-        </div>
-    `;
-
-    // Setup workouts list
-    const workoutsList = document.getElementById('workouts-list');
-    workoutsList.innerHTML = `
-        <div class="list-item">
-            <h3>Upper Body Strength</h3>
-            <p>Duration: 45 minutes</p>
-            <p>Assigned for: Today</p>
-        </div>
-        <div class="list-item">
-            <h3>Leg Day</h3>
-            <p>Duration: 60 minutes</p>
-            <p>Assigned for: Tomorrow</p>
-        </div>
-        <div class="list-item">
-            <h3>Core Workout</h3>
-            <p>Duration: 30 minutes</p>
-            <p>Assigned for: Friday</p>
-        </div>
-    `;
-}
-
-// Start workout
-function startWorkout(workoutId) {
-    // For demo, we'll use a hardcoded workout
-    appState.currentWorkout = {
-        id: workoutId,
-        title: 'Upper Body Strength',
-        description: 'Focus on chest, shoulders, and triceps.',
-        exercises: [
-            {
-                name: 'Bench Press',
-                sets: 3,
-                reps: 10,
-                weight: 135,
-                instructions: 'Lie on the bench with feet on the floor. Grip the bar with hands slightly wider than shoulder-width. Lower the bar to your chest, then press back up.',
-                restTime: 90
-            },
-            {
-                name: 'Overhead Press',
-                sets: 3,
-                reps: 12,
-                weight: 65,
-                instructions: 'Hold the bar at shoulder level with palms facing forward. Press the bar overhead until arms are extended, then lower back to shoulders.',
-                restTime: 90
-            },
-            {
-                name: 'Tricep Pushdowns',
-                sets: 3,
-                reps: 15,
-                weight: 50,
-                instructions: 'Stand facing a cable machine with a rope attachment. Push the rope down until arms are fully extended, then slowly return to starting position.',
-                restTime: 60
-            },
-            {
-                name: 'Lat Pulldowns',
-                sets: 3,
-                reps: 12,
-                weight: 120,
-                instructions: 'Sit at a pulldown machine with a wide grip on the bar. Pull the bar down to your chest, then slowly release back up with control.',
-                restTime: 90
-            }
-        ],
-        duration: 45
-    };
-
-    // Reset exercise index
-    appState.currentExerciseIndex = 0;
-
-    // Show workout screen
-    showScreen('activeWorkout');
-
-    // Load first exercise
-    loadCurrentExercise();
-}
-
-// Load current exercise in workout
-function loadCurrentExercise() {
-    const workout = appState.currentWorkout;
-    const exerciseIndex = appState.currentExerciseIndex;
-    const exercise = workout.exercises[exerciseIndex];
-
-    // Update workout title and info
-    document.getElementById('workout-title').textContent = workout.title;
-    document.getElementById('workout-description').textContent = workout.description;
-
-    // Update exercise container
-    const exerciseContainer = document.getElementById('exercise-container');
-
-    // Build exercise HTML
-    let exerciseHtml = `
-        <div class="exercise-header">
-            <h3>${exercise.name}</h3>
-            <div class="exercise-timer">Rest: <span id="rest-timer">90</span>s</div>
-        </div>
-        <p>${exercise.instructions}</p>
-        <div class="exercise-progress">
-            <p>Exercise ${exerciseIndex + 1} of ${workout.exercises.length}</p>
-        </div>
-        <div class="sets-container">
-    `;
-
-    // Add sets
-    for (let i = 0; i < exercise.sets; i++) {
-        exerciseHtml += `
-            <div class="set-row">
-                <div class="set-number">Set ${i + 1}</div>
-                <div class="rep-weight-inputs">
-                    <input type="number" class="reps-input" placeholder="Reps" value="${exercise.reps}">
-                    <input type="number" class="weight-input" placeholder="Weight" value="${exercise.weight}">
-                </div>
-                <button class="set-complete-btn" data-set="${i + 1}">✓</button>
+    clients.forEach(client => {
+        html += `
+            <div class="list-item" data-client-id="${client.id}">
+                <h3>${client.name}</h3>
+                <p>Fitness Level: ${client.fitnessLevel || 'Not specified'}</p>
+                <p>Goals: ${client.goals || 'Not specified'}</p>
             </div>
         `;
-    }
+    });
 
-    exerciseHtml += `
-        </div>
-    `;
+    clientsList.innerHTML = html;
 
-    exerciseContainer.innerHTML = exerciseHtml;
-
-    // Update navigation buttons
-    const prevButton = document.getElementById('prev-exercise');
-    const nextButton = document.getElementById('next-exercise');
-    const completeButton = document.getElementById('complete-workout');
-
-    // Hide/show prev button based on index
-    if (exerciseIndex === 0) {
-        prevButton.classList.add('hidden');
-    } else {
-        prevButton.classList.remove('hidden');
-    }
-
-    // Update next/complete buttons
-    if (exerciseIndex === workout.exercises.length - 1) {
-        nextButton.classList.add('hidden');
-        completeButton.classList.remove('hidden');
-    } else {
-        nextButton.classList.remove('hidden');
-        completeButton.classList.add('hidden');
-    }
-
-    // Setup set completion listeners
-    const setButtons = document.querySelectorAll('.set-complete-btn');
-    setButtons.forEach(button => {
-        button.addEventListener('click', (e) => {
-            const setRow = e.target.closest('.set-row');
-            setRow.style.opacity = '0.6';
-            e.target.textContent = '✓';
-            e.target.style.backgroundColor = 'var(--success-color)';
-            e.target.style.color = 'white';
+    // Add click event listeners
+    const clientItems = clientsList.querySelectorAll('.list-item');
+    clientItems.forEach(item => {
+        item.addEventListener('click', () => {
+            const clientId = item.getAttribute('data-client-id');
+            viewClientDetails(clientId);
         });
     });
 }
 
-// Move to next exercise
-function nextExercise() {
-    // Increment exercise index
-    appState.currentExerciseIndex++;
+// View client details (placeholder)
+function viewClientDetails(clientId) {
+    tg.showPopup({
+        title: 'Client Details',
+        message: 'Detailed client view is coming soon.',
+        buttons: [{ type: 'ok' }]
+    });
+}
 
-    // Check if we've reached the end
-    if (appState.currentExerciseIndex >= appState.currentWorkout.exercises.length) {
-        // Complete workout
-        completeWorkout();
+// Render trainer's programs list
+function renderProgramsList(programs) {
+    const programsList = document.getElementById('programs-list');
+
+    if (!programs || programs.length === 0) {
+        programsList.innerHTML = '<p>You have no programs yet.</p>';
         return;
     }
 
-    // Load the next exercise
-    loadCurrentExercise();
+    let html = '';
+
+    programs.forEach(program => {
+        html += `
+            <div class="list-item" data-program-id="${program.id}">
+                <h3>${program.name}</h3>
+                <p>${program.description || ''}</p>
+                <p>${program.durationWeeks} week program, Difficulty: ${program.difficulty}</p>
+                <p>Active clients: ${program.activeClients || 0}</p>
+            </div>
+        `;
+    });
+
+    programsList.innerHTML = html;
+
+    // Add click event listeners
+    const programItems = programsList.querySelectorAll('.list-item');
+    programItems.forEach(item => {
+        item.addEventListener('click', () => {
+            const programId = item.getAttribute('data-program-id');
+            viewProgramDetails(programId);
+        });
+    });
 }
 
-// Move to previous exercise
-function prevExercise() {
-    // Decrement exercise index
-    appState.currentExerciseIndex--;
+// View program details (placeholder)
+function viewProgramDetails(programId) {
+    tg.showPopup({
+        title: 'Program Details',
+        message: 'Detailed program view is coming soon.',
+        buttons: [{ type: 'ok' }]
+    });
+}
 
-    // Ensure we don't go below 0
-    if (appState.currentExerciseIndex < 0) {
-        appState.currentExerciseIndex = 0;
+// Render trainer's exercises list
+function renderExercisesList(exercises) {
+    const exercisesList = document.getElementById('exercises-list');
+
+    if (!exercises || exercises.length === 0) {
+        exercisesList.innerHTML = '<p>You have no exercises yet.</p>';
+        return;
     }
 
-    // Load the previous exercise
-    loadCurrentExercise();
+    let html = '';
+
+    exercises.forEach(exercise => {
+        html += `
+            <div class="list-item" data-exercise-id="${exercise.id}">
+                <h3>${exercise.name}</h3>
+                <p>Muscle group: ${exercise.muscleGroup || 'Not specified'}</p>
+                <p>Difficulty: ${exercise.difficulty || 'Not specified'}</p>
+            </div>
+        `;
+    });
+
+    exercisesList.innerHTML = html;
+
+    // Add click event listeners
+    const exerciseItems = exercisesList.querySelectorAll('.list-item');
+    exerciseItems.forEach(item => {
+        item.addEventListener('click', () => {
+            const exerciseId = item.getAttribute('data-exercise-id');
+            viewExerciseDetails(exerciseId);
+        });
+    });
 }
 
-// Complete workout
-function completeWorkout() {
-    // Show completion popup
+// View exercise details (placeholder)
+function viewExerciseDetails(exerciseId) {
     tg.showPopup({
-        title: 'Workout Complete!',
-        message: 'Great job! You\'ve completed today\'s workout.',
-        buttons: [
-            { id: 'ok', type: 'ok', text: 'Done' }
-        ]
-    }, () => {
-        // Return to dashboard
-        showScreen(appState.userRole === 'trainer' ? 'trainerDashboard' : 'clientDashboard');
-
-        // Show alert with congratulations
-        setTimeout(() => {
-            tg.showAlert('🎉 Congratulations! You\'ve earned 50 fitness points!');
-        }, 500);
+        title: 'Exercise Details',
+        message: 'Detailed exercise view is coming soon.',
+        buttons: [{ type: 'ok' }]
     });
+}
+
+// Load analytics data
+async function loadAnalytics() {
+    try {
+        const analyticsTab = document.getElementById('analytics-tab');
+        analyticsTab.innerHTML = '<div class="loader"></div>';
+
+        const response = await window.trainer.getAnalytics();
+
+        if (response.success) {
+            const analytics = response.analytics;
+
+            analyticsTab.innerHTML = `
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <h3>Total Clients</h3>
+                        <p class="stat-value">${analytics.totalClients}</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Active Clients</h3>
+                        <p class="stat-value">${analytics.activeClients}</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Workouts Completed</h3>
+                        <p class="stat-value">${analytics.workoutsCompleted}</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Avg. Completion Rate</h3>
+                        <p class="stat-value">${analytics.averageCompletionRate}%</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Top Program</h3>
+                        <p class="stat-value">${analytics.topProgram || 'None'}</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Client Growth</h3>
+                        <p class="stat-value">${analytics.clientGrowth}%</p>
+                    </div>
+                </div>
+            `;
+        } else {
+            analyticsTab.innerHTML = `<p>Error loading analytics: ${response.error}</p>`;
+        }
+    } catch (error) {
+        console.error('Load analytics error:', error);
+        document.getElementById('analytics-tab').innerHTML = `<p>Error loading analytics. Please try again.</p>`;
+    }
+}
+
+// Load data for client dashboard
+async function loadClientData() {
+    try {
+        // Show loading indicators or placeholders
+        document.getElementById('upcoming-workouts').innerHTML = '<div class="loader"></div>';
+        document.getElementById('workouts-list').innerHTML = '<div class="loader"></div>';
+        document.getElementById('progress-tab').innerHTML = '<div class="loader"></div>';
+        document.getElementById('achievements-list').innerHTML = '<div class="loader"></div>';
+
+        // Fetch schedule (upcoming workouts)
+        const scheduleResponse = await window.client.getSchedule();
+        if (scheduleResponse.success) {
+            renderClientSchedule(scheduleResponse.schedule);
+        } else {
+            document.getElementById('upcoming-workouts').innerHTML = `<p>Error loading schedule: ${scheduleResponse.error}</p>`;
+        }
+
+        // Fetch workouts
+        const workoutsResponse = await window.client.getWorkouts();
+        if (workoutsResponse.success) {
+            renderClientWorkouts(workoutsResponse.workouts);
+        } else {
+            document.getElementById('workouts-list').innerHTML = `<p>Error loading workouts: ${workoutsResponse.error}</p>`;
+        }
+
+        // Fetch progress
+        const progressResponse = await window.client.getProgress();
+        if (progressResponse.success) {
+            renderClientProgress(progressResponse.progress);
+        } else {
+            document.getElementById('progress-tab').innerHTML = `<p>Error loading progress: ${progressResponse.error}</p>`;
+        }
+
+        // Fetch achievements
+        const achievementsResponse = await window.client.getAchievements();
+        if (achievementsResponse.success) {
+            renderClientAchievements(achievementsResponse.achievements);
+        } else {
+            document.getElementById('achievements-list').innerHTML = `<p>Error loading achievements: ${achievementsResponse.error}</p>`;
+        }
+    } catch (error) {
+        console.error('Load client data error:', error);
+        tg.showAlert('Error loading data. Please try refreshing the app.');
+    }
+}
+
+// Render client's schedule
+function renderClientSchedule(schedule) {
+    const upcomingWorkouts = document.getElementById('upcoming-workouts');
+
+    if (!schedule || (!schedule.upcoming || schedule.upcoming.length === 0)) {
+        upcomingWorkouts.innerHTML = '<h3>Upcoming Workouts</h3><p>You have no upcoming workouts.</p>';
+        return;
+    }
+
+    let html = '<h3>Upcoming Workouts</h3>';
+
+    schedule.upcoming.forEach(workout => {
+        const scheduledDate = new Date(workout.scheduled);
+        const formattedDate = scheduledDate.toLocaleDateString();
+        const formattedTime = scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        html += `
+            <div class="list-item" data-workout-id="${workout.id}">
+                <h3>${workout.title}</h3>
+                <p>${workout.description || ''}</p>
+                <p>${formattedDate} at ${formattedTime}</p>
+                <button class="action-btn" onclick="startWorkout('${workout.id}')">Start Workout</button>
+            </div>
+        `;
+    });
+
+    upcomingWorkouts.innerHTML = html;
+}
+
+// Render client's workouts
+function renderClientWorkouts(workouts) {
+    const workoutsList = document.getElementById('workouts-list');
+
+    if (!workouts || workouts.length === 0) {
+        workoutsList.innerHTML = '<p>You have no workouts yet.</p>';
+        return;
+    }
+
+    let html = '';
+
+    workouts.forEach(workout => {
+        const scheduledDate = new Date(workout.scheduled);
+        const formattedDate = scheduledDate.toLocaleDateString();
+
+        html += `
+            <div class="list-item" data-workout-id="${workout.id}">
+                <h3>${workout.title}</h3>
+                <p>${workout.description || ''}</p>
+                <p>Status: ${workout.status || 'Scheduled'}</p>
+                <p>Date: ${formattedDate}</p>
+                <p>Exercises: ${workout.exercises ? workout.exercises.length : 0}</p>
+                ${workout.status !== 'completed' ?
+            `<button class="action-btn" onclick="startWorkout('${workout.id}')">Start Workout</button>` :
+            '<span class="status-badge completed">Completed</span>'}
+            </div>
+        `;
+    });
+
+    workoutsList.innerHTML = html;
+}
+
+// Render client's progress
+function renderClientProgress(progress) {
+    const progressTab = document.getElementById('progress-tab');
+
+    if (!progress) {
+        progressTab.innerHTML = '<p>No progress data available yet.</p>';
+        return;
+    }
+
+    let html = `
+        <div class="stats-container">
+            <div class="stat-card">
+                <h3>Completion Rate</h3>
+                <p class="stat-value">${progress.completionRate || 0}%</p>
+            </div>
+            <div class="stat-card">
+                <h3>Workouts Completed</h3>
+                <p class="stat-value">${progress.workoutsCompleted || 0}</p>
+            </div>
+            <div class="stat-card">
+                <h3>Current Streak</h3>
+                <p class="stat-value">${progress.streakDays || 0} days</p>
+            </div>
+        </div>
+    `;
+
+    // Add personal bests section if available
+    if (progress.personalBests && progress.personalBests.length > 0) {
+        html += `
+            <div class="section-heading">
+                <h3>Personal Bests</h3>
+            </div>
+            <div class="personal-bests">
+        `;
+
+        progress.personalBests.forEach(pb => {
+            const date = new Date(pb.date);
+            const formattedDate = date.toLocaleDateString();
+
+            html += `
+                <div class="personal-best-item">
+                    <p class="exercise-name">${pb.exercise}</p>
+                    <p class="personal-best-value">${pb.value}</p>
+                    <p class="personal-best-date">${formattedDate}</p>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+    }
+
+    // Add weight progress section if available
+    if (progress.weightData && progress.weightData.length > 0) {
+        html += `
+            <div class="section-heading">
+                <h3>Weight Progress</h3>
+            </div>
+            <div class="weight-progress">
+        `;
+
+        // Sort by date
+        const sortedWeightData = [...progress.weightData].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        sortedWeightData.forEach(entry => {
+            const date = new Date(entry.date);
+            const formattedDate = date.toLocaleDateString();
+
+            html += `
+                <div class="weight-entry">
+                    <span class="weight-date">${formattedDate}</span>
+                    <span class="weight-value">${entry.value} lbs</span>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+    }
+
+    progressTab.innerHTML = html;
+}
+
+// Render client's achievements
+function renderClientAchievements(achievements) {
+    const achievementsList = document.getElementById('achievements-list');
+
+    if (!achievements || achievements.length === 0) {
+        achievementsList.innerHTML = '<p>You have no achievements yet. Keep working out to earn some!</p>';
+        return;
+    }
+
+    let html = '';
+
+    achievements.forEach(achievement => {
+        const date = achievement.date ? new Date(achievement.date) : null;
+        const formattedDate = date ? date.toLocaleDateString() : 'N/A';
+
+        html += `
+            <div class="achievement-item">
+                <div class="achievement-icon">${achievement.icon || '🏆'}</div>
+                <div class="achievement-info">
+                    <h3>${achievement.name}</h3>
+                    <p>${achievement.description}</p>
+                    <p class="achievement-date">Earned on: ${formattedDate}</p>
+                </div>
+            </div>
+        `;
+    });
+
+    achievementsList.innerHTML = html;
+}
+
+// Start a workout
+async function startWorkout(workoutId) {
+    try {
+        // Show loading screen
+        showScreen('loading');
+
+        // Call the workout module to start the workout session
+        const result = await window.workout.startWorkoutSession(workoutId);
+
+        if (result && result.success) {
+            showScreen('activeWorkout');
+        } else {
+            tg.showAlert(result.error || 'Failed to start workout. Please try again.');
+            showScreen(appState.userRole === 'trainer' ? 'trainerDashboard' : 'clientDashboard');
+        }
+    } catch (error) {
+        console.error('Start workout error:', error);
+        tg.showAlert('Error starting workout. Please try again.');
+        showScreen(appState.userRole === 'trainer' ? 'trainerDashboard' : 'clientDashboard');
+    }
 }
 
 // Start the app when DOM is fully loaded

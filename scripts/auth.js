@@ -1,7 +1,7 @@
 // Authentication module for FitTrainer
 
-// API URL (replace with your actual API endpoint in production)
-const API_BASE_URL = 'https://api.example.com';
+// API URL - local backend
+const API_BASE_URL = 'http://localhost:5000/api';
 
 // Telegram instance
 const tg = window.Telegram.WebApp;
@@ -17,31 +17,31 @@ function isAuthenticated() {
 // Login user
 async function login(userData) {
     try {
-        // In a real app, this would be an API call
-        // For demo, we'll simulate a successful login
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(userData)
+        });
 
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'Authentication failed');
+        }
 
         // Store auth data
-        authToken = 'demo-auth-token-' + Date.now();
+        authToken = data.token;
         localStorage.setItem('fitTrainerAuthToken', authToken);
+        localStorage.setItem('userRole', data.user.role);
 
-        // Return success
-        return {
-            success: true,
-            user: {
-                id: userData.id || 'demo-user',
-                role: userData.role,
-                firstName: userData.firstName,
-                lastName: userData.lastName
-            }
-        };
+        return data;
     } catch (error) {
         console.error('Login error:', error);
         return {
             success: false,
-            error: 'Authentication failed. Please try again.'
+            error: error.message || 'Authentication failed. Please try again.'
         };
     }
 }
@@ -49,31 +49,71 @@ async function login(userData) {
 // Register new user
 async function register(userData) {
     try {
-        // In a real app, this would be an API call
-        // For demo, we'll simulate a successful registration
+        const response = await fetch(`${API_BASE_URL}/auth/register`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(userData)
+        });
 
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'Registration failed');
+        }
 
         // Store auth data
-        authToken = 'demo-auth-token-' + Date.now();
+        authToken = data.token;
         localStorage.setItem('fitTrainerAuthToken', authToken);
+        localStorage.setItem('userRole', data.user.role);
 
-        // Return success
-        return {
-            success: true,
-            user: {
-                id: userData.id || 'demo-user',
-                role: userData.role,
-                firstName: userData.firstName,
-                lastName: userData.lastName
-            }
-        };
+        return data;
     } catch (error) {
         console.error('Registration error:', error);
         return {
             success: false,
-            error: 'Registration failed. Please try again.'
+            error: error.message || 'Registration failed. Please try again.'
+        };
+    }
+}
+
+// Authenticate with Telegram
+async function authenticateWithTelegram(role) {
+    try {
+        // Get Telegram Web App init data
+        const initData = tg.initData;
+
+        if (!initData) {
+            throw new Error('Telegram data not available');
+        }
+
+        // Send to backend for verification
+        const response = await fetch(`${API_BASE_URL}/auth/telegram`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ initData, role })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'Authentication failed');
+        }
+
+        // Store auth data
+        authToken = data.token;
+        localStorage.setItem('fitTrainerAuthToken', authToken);
+        localStorage.setItem('userRole', data.user.role);
+
+        return data;
+    } catch (error) {
+        console.error('Telegram authentication error:', error);
+        return {
+            success: false,
+            error: error.message || 'Authentication failed. Please try again.'
         };
     }
 }
@@ -82,9 +122,7 @@ async function register(userData) {
 function logout() {
     authToken = null;
     localStorage.removeItem('fitTrainerAuthToken');
-
-    // In a real app, you might want to notify the API
-    // that the user has logged out
+    localStorage.removeItem('userRole');
 
     // Return to auth screen
     window.location.reload();
@@ -97,16 +135,32 @@ async function getCurrentUser() {
     }
 
     try {
-        // In a real app, this would be an API call to get user data
-        // For demo, we'll return dummy data
+        let endpoint = '';
+        const role = localStorage.getItem('userRole');
 
-        return {
-            id: 'demo-user',
-            firstName: tg.initDataUnsafe.user?.first_name || 'Demo',
-            lastName: tg.initDataUnsafe.user?.last_name || 'User',
-            username: tg.initDataUnsafe.user?.username || 'demouser',
-            role: localStorage.getItem('userRole') || 'client'
-        };
+        if (role === 'trainer') {
+            endpoint = `${API_BASE_URL}/trainer/profile`;
+        } else if (role === 'client') {
+            endpoint = `${API_BASE_URL}/client/profile`;
+        } else {
+            throw new Error('Unknown user role');
+        }
+
+        const response = await fetch(endpoint, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to get user data');
+        }
+
+        return role === 'trainer' ? data.trainer : data.client;
     } catch (error) {
         console.error('Get user error:', error);
         return null;
@@ -118,6 +172,7 @@ window.auth = {
     isAuthenticated,
     login,
     register,
+    authenticateWithTelegram,
     logout,
     getCurrentUser
 };

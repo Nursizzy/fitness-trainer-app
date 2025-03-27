@@ -259,6 +259,10 @@ body {
     border-bottom: 1px solid var(--bg-color);
 }
 
+.set-row.completed {
+    opacity: 0.6;
+}
+
 .set-number {
     font-weight: 600;
     width: 30px;
@@ -296,6 +300,145 @@ body {
     margin-bottom: 20px;
 }
 
+/* Stats Container */
+.stats-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    background-color: var(--secondary-bg-color);
+    padding: 15px;
+    border-radius: var(--border-radius);
+    text-align: center;
+}
+
+.stat-card h3 {
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+    color: var(--hint-color);
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+/* Achievement styles */
+.achievement-item {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    background-color: var(--secondary-bg-color);
+    border-radius: var(--border-radius);
+    margin-bottom: 10px;
+}
+
+.achievement-icon {
+    font-size: 2rem;
+    margin-right: 15px;
+}
+
+.achievement-info {
+    flex-grow: 1;
+}
+
+.achievement-info h3 {
+    font-size: 1rem;
+    margin-bottom: 5px;
+}
+
+.achievement-date {
+    font-size: 0.8rem;
+    color: var(--hint-color);
+    margin-top: 5px;
+}
+
+/* Personal bests */
+.section-heading {
+    margin: 20px 0 10px;
+}
+
+.personal-bests {
+    background-color: var(--secondary-bg-color);
+    border-radius: var(--border-radius);
+    padding: 10px;
+}
+
+.personal-best-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    border-bottom: 1px solid var(--bg-color);
+}
+
+.personal-best-item:last-child {
+    border-bottom: none;
+}
+
+.exercise-name {
+    font-weight: 500;
+    flex-grow: 1;
+}
+
+.personal-best-value {
+    font-weight: 600;
+    margin: 0 10px;
+}
+
+.personal-best-date {
+    font-size: 0.8rem;
+    color: var(--hint-color);
+}
+
+/* Weight progress */
+.weight-progress {
+    background-color: var(--secondary-bg-color);
+    border-radius: var(--border-radius);
+    padding: 10px;
+}
+
+.weight-entry {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    border-bottom: 1px solid var(--bg-color);
+}
+
+.weight-entry:last-child {
+    border-bottom: none;
+}
+
+.weight-value {
+    font-weight: 600;
+}
+
+/* Status badges */
+.status-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    margin-top: 5px;
+}
+
+.status-badge.completed {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.status-badge.scheduled {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.status-badge.in-progress {
+    background-color: var(--warning-color);
+    color: white;
+}
+
 /* Responsive Adjustments */
 @media (max-width: 480px) {
     .header h1 {
@@ -309,5 +452,13 @@ body {
     .control-btn {
         width: 100%;
         margin-bottom: 10px;
+    }
+
+    .stats-container {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+
+    .stat-value {
+        font-size: 1.2rem;
     }
 }
