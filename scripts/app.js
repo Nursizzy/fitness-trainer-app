@@ -721,6 +721,44 @@ async function loadClientData() {
 function initApp() {
     console.log("Initializing app...");
 
+    // Initialize screens object here
+    const screens = {
+        loading: document.getElementById('loading-screen'),
+        auth: document.getElementById('auth-screen'),
+        trainerDashboard: document.getElementById('trainer-dashboard'),
+        clientDashboard: document.getElementById('client-dashboard'),
+        activeWorkout: document.getElementById('active-workout'),
+        createProgram: document.getElementById('create-program'),
+        addExercise: document.getElementById('add-exercise')
+    };
+
+    // Make screens object available globally
+    window.screens = screens;
+
+    // Update the showScreen function to use window.screens
+    window.showScreen = function(screenName) {
+        console.log(`Showing screen: ${screenName}`);
+        // Hide all screens
+        Object.values(window.screens).forEach(screen => {
+            if (screen) screen.classList.add('hidden');
+        });
+
+        // Show the requested screen
+        if (window.screens[screenName]) {
+            window.screens[screenName].classList.remove('hidden');
+        } else {
+            console.error(`Screen ${screenName} not found`);
+        }
+
+        // Update app state
+        window.appState.currentScreen = screenName;
+
+        // Update Telegram Web App settings based on current screen
+        if (window.tgAvailable) {
+            updateTelegramSettings(screenName);
+        }
+    };
+
     // Setup event listeners
     setupEventListeners();
 
