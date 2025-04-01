@@ -3,7 +3,12 @@
 // Update the Add Exercise screen with the form and event handlers
 function updateAddExerciseScreen() {
     const addExerciseScreen = document.getElementById('add-exercise');
-    if (!addExerciseScreen) return;
+    if (!addExerciseScreen) {
+        console.error("Add exercise screen element not found");
+        return;
+    }
+
+    console.log("Updating add exercise screen");
 
     addExerciseScreen.innerHTML = `
         <div class="header">
@@ -145,7 +150,7 @@ async function handleExerciseSubmit(e) {
     } catch (error) {
         console.error('Add exercise error:', error);
         window.showAlert('Error', error.message || 'Failed to add exercise. Please try again.');
-        window.showScreen('add-exercise');
+        window.showScreen('addExercise');
     }
 }
 

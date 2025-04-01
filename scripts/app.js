@@ -152,7 +152,7 @@ function setupEventListeners() {
 
     if (addClientBtn) {
         addClientBtn.addEventListener('click', () => {
-            showAlert('Add New Client', 'This feature is coming soon.');
+            window.showAlert('Add New Client', 'This feature is coming soon.');
         });
     }
 
@@ -162,7 +162,7 @@ function setupEventListeners() {
             if (window.updateCreateProgramScreen) {
                 window.updateCreateProgramScreen();
             }
-            showScreen('create-program');
+            window.showScreen('createProgram');
         });
     }
 
@@ -172,7 +172,7 @@ function setupEventListeners() {
             if (window.updateAddExerciseScreen) {
                 window.updateAddExerciseScreen();
             }
-            showScreen('add-exercise');
+            window.showScreen('addExercise');
         });
     }
 }
@@ -189,6 +189,9 @@ function showAlert(title, message) {
         alert(`${title}\n\n${message}`);
     }
 }
+
+// Make showAlert available globally
+window.showAlert = showAlert;
 
 // Check if user is authenticated
 async function checkAuthentication() {
@@ -216,12 +219,12 @@ async function checkAuthentication() {
                         if (window.trainer) {
                             await loadTrainerData();
                         }
-                        showScreen('trainerDashboard');
+                        window.showScreen('trainerDashboard');
                     } else {
                         if (window.client) {
                             await loadClientData();
                         }
-                        showScreen('clientDashboard');
+                        window.showScreen('clientDashboard');
                     }
 
                     return;
@@ -237,14 +240,36 @@ async function checkAuthentication() {
 
     // For testing/development in standalone mode
     if (appState.standaloneMode) {
-        console.log("Running in standalone mode - showing auth screen");
-        // In standalone mode, allow direct selection without Telegram auth
-        showScreen('auth');
+        console.log("Running in standalone mode - creating default trainer");
+
+        // Skip auth screen and create default trainer automatically
+        appState.isAuthenticated = true;
+        appState.userRole = 'trainer';
+        localStorage.setItem('userRole', 'trainer');
+        localStorage.setItem('fitTrainerAuthToken', 'test-token');
+
+        appState.userData = {
+            name: 'Default Trainer',
+            firstName: 'Default',
+            lastName: 'Trainer',
+            username: 'defaulttrainer',
+            role: 'trainer'
+        };
+
+        // Update UI with user info
+        updateUserInfo();
+
+        // Load trainer dashboard
+        if (window.trainer) {
+            await loadTrainerData();
+        }
+        window.showScreen('trainerDashboard');
+
         return;
     }
 
     // If we get here, user is not authenticated
-    showScreen('auth');
+    window.showScreen('auth');
 }
 
 // Handle role selection and proceed to authentication
@@ -256,7 +281,7 @@ async function selectRole(role) {
 
     try {
         // Show loading indicator
-        showScreen('loading');
+        window.showScreen('loading');
 
         // For standalone mode, skip Telegram authentication
         if (appState.standaloneMode) {
@@ -276,12 +301,12 @@ async function selectRole(role) {
                 if (window.trainer) {
                     await loadTrainerData();
                 }
-                showScreen('trainerDashboard');
+                window.showScreen('trainerDashboard');
             } else {
                 if (window.client) {
                     await loadClientData();
                 }
-                showScreen('clientDashboard');
+                window.showScreen('clientDashboard');
             }
             return;
         }
@@ -300,25 +325,25 @@ async function selectRole(role) {
                 // Navigate to appropriate dashboard
                 if (role === 'trainer') {
                     await loadTrainerData();
-                    showScreen('trainerDashboard');
+                    window.showScreen('trainerDashboard');
                 } else {
                     await loadClientData();
-                    showScreen('clientDashboard');
+                    window.showScreen('clientDashboard');
                 }
             } else {
                 // Authentication failed
                 showAlert('Authentication Failed', result.error || 'Authentication failed. Please try again.');
-                showScreen('auth');
+                window.showScreen('auth');
             }
         } else {
             console.error("Auth module not available");
             showAlert('Error', 'Authentication module not available');
-            showScreen('auth');
+            window.showScreen('auth');
         }
     } catch (error) {
         console.error('Role selection error:', error);
         showAlert('Authentication Error', 'Please try again.');
-        showScreen('auth');
+        window.showScreen('auth');
     }
 }
 
@@ -361,18 +386,18 @@ function handleBackButton() {
                     ]
                 }, (buttonId) => {
                     if (buttonId === 'exit') {
-                        showScreen(appState.userRole === 'trainer' ? 'trainerDashboard' : 'clientDashboard');
+                        window.showScreen(appState.userRole === 'trainer' ? 'trainerDashboard' : 'clientDashboard');
                     }
                 });
             } else {
                 if (confirm('Exit workout? Your progress will not be saved.')) {
-                    showScreen(appState.userRole === 'trainer' ? 'trainerDashboard' : 'clientDashboard');
+                    window.showScreen(appState.userRole === 'trainer' ? 'trainerDashboard' : 'clientDashboard');
                 }
             }
             break;
         case 'createProgram':
         case 'addExercise':
-            showScreen('trainerDashboard');
+            window.showScreen('trainerDashboard');
             break;
         default:
             // Nothing to do
@@ -404,7 +429,7 @@ async function loadTrainerData() {
             if (clientsResponse.success && clientsList) {
                 renderClientsList(clientsResponse.clients);
             } else if (clientsList) {
-                clientsList.innerHTML = `<p>Error loading clients: ${clientsResponse.error || 'Unknown error'}</p>`;
+                clientsList.innerHTML = `<p>Error loading clients: ${clientsResponse?.error || 'Unknown error'}</p>`;
             }
         }
 
@@ -414,7 +439,7 @@ async function loadTrainerData() {
             if (programsResponse.success && programsList) {
                 renderProgramsList(programsResponse.programs);
             } else if (programsList) {
-                programsList.innerHTML = `<p>Error loading programs: ${programsResponse.error || 'Unknown error'}</p>`;
+                programsList.innerHTML = `<p>Error loading programs: ${programsResponse?.error || 'Unknown error'}</p>`;
             }
         }
 
@@ -424,7 +449,7 @@ async function loadTrainerData() {
             if (exercisesResponse.success && exercisesList) {
                 renderExercisesList(exercisesResponse.exercises);
             } else if (exercisesList) {
-                exercisesList.innerHTML = `<p>Error loading exercises: ${exercisesResponse.error || 'Unknown error'}</p>`;
+                exercisesList.innerHTML = `<p>Error loading exercises: ${exercisesResponse?.error || 'Unknown error'}</p>`;
             }
         }
 
@@ -683,8 +708,8 @@ async function loadClientData() {
 function initApp() {
     console.log("Initializing app...");
 
-    // Initialize screens object here
-    const screens = {
+    // Initialize screens object
+    window.screens = {
         loading: document.getElementById('loading-screen'),
         auth: document.getElementById('auth-screen'),
         trainerDashboard: document.getElementById('trainer-dashboard'),
@@ -694,10 +719,7 @@ function initApp() {
         addExercise: document.getElementById('add-exercise')
     };
 
-    // Make screens object available globally
-    window.screens = screens;
-
-    // Update the showScreen function to use window.screens
+    // Define the showScreen function globally
     window.showScreen = function(screenName) {
         console.log(`Showing screen: ${screenName}`);
         // Hide all screens
@@ -713,13 +735,17 @@ function initApp() {
         }
 
         // Update app state
-        window.appState.currentScreen = screenName;
+        appState.currentScreen = screenName;
 
         // Update Telegram Web App settings based on current screen
-        if (window.tgAvailable) {
+        if (tgAvailable) {
             updateTelegramSettings(screenName);
         }
     };
+
+    // Make these functions available globally
+    window.renderExercisesList = renderExercisesList;
+    window.renderProgramsList = renderProgramsList;
 
     // Setup event listeners
     setupEventListeners();
@@ -730,10 +756,6 @@ function initApp() {
     // Check if user is already authenticated
     checkAuthentication();
 }
-
-// Make these functions available globally
-window.renderExercisesList = renderExercisesList;
-window.renderProgramsList = renderProgramsList;
 
 // Start the app when DOM is fully loaded
 document.addEventListener('DOMContentLoaded', function() {

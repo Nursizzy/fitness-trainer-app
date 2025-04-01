@@ -3,7 +3,12 @@
 // Update the Create Program screen with the form and event handlers
 function updateCreateProgramScreen() {
     const createProgramScreen = document.getElementById('create-program');
-    if (!createProgramScreen) return;
+    if (!createProgramScreen) {
+        console.error("Create program screen element not found");
+        return;
+    }
+
+    console.log("Updating create program screen");
 
     createProgramScreen.innerHTML = `
         <div class="header">
@@ -130,7 +135,7 @@ async function handleProgramSubmit(e) {
     } catch (error) {
         console.error('Create program error:', error);
         window.showAlert('Error', error.message || 'Failed to create program. Please try again.');
-        window.showScreen('create-program');
+        window.showScreen('createProgram');
     }
 }
 
