@@ -1,7 +1,8 @@
 // Main application script for FitTrainer
 
-// Initialize Telegram Mini App
-const tg = window.Telegram.WebApp;
+// Use the globally available Telegram WebApp instance instead of redefining it
+// const tg = window.Telegram.WebApp; // Remove this line
+const tg = window.tg; // Use the globally available instance
 
 // Tell Telegram we're ready
 tg.ready();
