@@ -28,7 +28,7 @@ app.use(cors(corsOptions));
 app.use(bodyParser.json());
 
 // Import the DB connection module
-const connectDB = require('./db');
+const connectDB = require('./config/db');
 
 // Connect to MongoDB
 connectDB()
