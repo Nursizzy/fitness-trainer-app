@@ -1,26 +1,27 @@
-// Main application script for FitTrainer
-console.log("App.js loaded, initializing...");
+// Update the Telegram detection code at the beginning of app.js
 
 // Initialize Telegram Web App if available
 let tgAvailable = false;
 try {
-    // Check if Telegram object exists
-    if (window.Telegram && window.Telegram.WebApp) {
+    // Check if Telegram object exists and has initData
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData && window.Telegram.WebApp.initData.length > 0) {
         window.tg = window.Telegram.WebApp;
         tgAvailable = true;
-        console.log("Telegram WebApp found, preparing to initialize");
+        console.log("Telegram WebApp found with valid initData, preparing to initialize");
 
         // Tell Telegram we're ready
         window.tg.ready();
         window.tg.expand();
     } else {
-        console.log("Telegram WebApp not found, running in standalone mode");
+        console.log("Telegram WebApp not found or missing initData, running in standalone mode");
+        tgAvailable = false;
     }
 } catch (error) {
     console.error("Error initializing Telegram WebApp:", error);
+    tgAvailable = false;
 }
 
-// App state
+// Update the app state
 let appState = {
     currentScreen: 'loading',
     userRole: localStorage.getItem('userRole'),
@@ -179,14 +180,30 @@ function setupEventListeners() {
 
 // Show alert - works both in Telegram and standalone mode
 function showAlert(title, message) {
-    if (tgAvailable) {
-        window.tg.showPopup({
-            title: title,
-            message: message,
-            buttons: [{ type: 'ok' }]
-        });
-    } else {
-        alert(`${title}\n\n${message}`);
+    try {
+        if (tgAvailable && window.tg.showPopup) {
+            try {
+                window.tg.showPopup({
+                    title: title,
+                    message: message,
+                    buttons: [{ type: 'ok' }]
+                });
+            } catch (e) {
+                // Fallback if showPopup is not supported
+                console.warn("Telegram showPopup not supported, using alert instead:", e);
+                alert(`${title}\n\n${message}`);
+            }
+        } else {
+            alert(`${title}\n\n${message}`);
+        }
+    } catch (error) {
+        console.error("Error in showAlert:", error);
+        // Last resort fallback
+        try {
+            alert(`${title}\n\n${message}`);
+        } catch (e) {
+            console.error("Even alert failed:", e);
+        }
     }
 }
 
@@ -761,25 +778,12 @@ function initApp() {
 document.addEventListener('DOMContentLoaded', function() {
     console.log("DOM loaded, starting app initialization");
 
-    // Check if Telegram object exists but don't wait for ready event
-    if (window.Telegram && window.Telegram.WebApp) {
-        console.log("Telegram WebApp found, initializing immediately");
-        window.tg = window.Telegram.WebApp;
-        tgAvailable = true;
-
-        try {
-            // Tell Telegram we're ready
-            window.tg.ready();
-            window.tg.expand();
-        } catch (e) {
-            console.error("Error calling Telegram ready methods:", e);
-        }
-
-        // Initialize without waiting for the ready callback
-        initApp();
-    } else {
-        console.log("Telegram WebApp not available, falling back to standalone mode");
+    // Check one more time if we should run in standalone mode
+    if (!tgAvailable || !window.Telegram || !window.Telegram.WebApp.initData || window.Telegram.WebApp.initData.length === 0) {
+        console.log("Running in standalone mode due to missing Telegram initData");
         appState.standaloneMode = true;
-        initApp();
     }
+
+    // Initialize the app
+    initApp();
 });
