@@ -1,12 +1,8 @@
 // Main application script for FitTrainer
 
-// Use the globally available Telegram WebApp instance instead of redefining it
-// const tg = window.Telegram.WebApp; // Remove this line
-let tg = window.tg;
-
 // Tell Telegram we're ready
-tg.ready();
-tg.expand();
+window.tg.ready();
+window.tg.expand();
 
 // Get Telegram user info
 const user = tg.initDataUnsafe.user || {};
@@ -60,21 +56,21 @@ function updateTelegramSettings(screenName) {
     // Set main button text and visibility based on current screen
     switch(screenName) {
         case 'auth':
-            tg.MainButton.hide();
+            window.tg.MainButton.hide();
             break;
         case 'activeWorkout':
-            tg.MainButton.setText('Complete Workout');
-            tg.MainButton.show();
+            window.tg.MainButton.setText('Complete Workout');
+            window.tg.MainButton.show();
             break;
         default:
-            tg.MainButton.hide();
+            window.tg.MainButton.hide();
     }
 
     // Set back button visibility
     if (screenName === 'activeWorkout' || screenName === 'createProgram' || screenName === 'addExercise') {
-        tg.BackButton.show();
+        window.tg.BackButton.show();
     } else {
-        tg.BackButton.hide();
+        window.tg.BackButton.hide();
     }
 }
 
@@ -139,7 +135,7 @@ function setupEventListeners() {
 
     // Action buttons
     document.getElementById('add-client-btn').addEventListener('click', () => {
-        tg.showPopup({
+        window.tg.showPopup({
             title: 'Add New Client',
             message: 'This feature is coming soon.',
             buttons: [{ type: 'ok' }]
@@ -218,12 +214,12 @@ async function selectRole(role) {
             }
         } else {
             // Authentication failed
-            tg.showAlert(result.error || 'Authentication failed. Please try again.');
+            window.tg.showAlert(result.error || 'Authentication failed. Please try again.');
             showScreen('auth');
         }
     } catch (error) {
         console.error('Role selection error:', error);
-        tg.showAlert('Authentication error. Please try again.');
+        window.tg.showAlert('Authentication error. Please try again.');
         showScreen('auth');
     }
 }
@@ -255,7 +251,7 @@ function handleBackButton() {
     switch(appState.currentScreen) {
         case 'activeWorkout':
             // Confirm if user wants to exit workout
-            tg.showPopup({
+            window.tg.showPopup({
                 title: 'Exit Workout?',
                 message: 'Your progress will not be saved.',
                 buttons: [
@@ -314,7 +310,7 @@ async function loadTrainerData() {
         await loadAnalytics();
     } catch (error) {
         console.error('Load trainer data error:', error);
-        tg.showAlert('Error loading data. Please try refreshing the app.');
+        window.tg.showAlert('Error loading data. Please try refreshing the app.');
     }
 }
 
@@ -353,7 +349,7 @@ function renderClientsList(clients) {
 
 // View client details (placeholder)
 function viewClientDetails(clientId) {
-    tg.showPopup({
+    window.tg.showPopup({
         title: 'Client Details',
         message: 'Detailed client view is coming soon.',
         buttons: [{ type: 'ok' }]
@@ -396,7 +392,7 @@ function renderProgramsList(programs) {
 
 // View program details (placeholder)
 function viewProgramDetails(programId) {
-    tg.showPopup({
+    window.tg.showPopup({
         title: 'Program Details',
         message: 'Detailed program view is coming soon.',
         buttons: [{ type: 'ok' }]
@@ -438,7 +434,7 @@ function renderExercisesList(exercises) {
 
 // View exercise details (placeholder)
 function viewExerciseDetails(exerciseId) {
-    tg.showPopup({
+    window.tg.showPopup({
         title: 'Exercise Details',
         message: 'Detailed exercise view is coming soon.',
         buttons: [{ type: 'ok' }]
@@ -535,7 +531,7 @@ async function loadClientData() {
         }
     } catch (error) {
         console.error('Load client data error:', error);
-        tg.showAlert('Error loading data. Please try refreshing the app.');
+        window.tg.showAlert('Error loading data. Please try refreshing the app.');
     }
 }
 
@@ -723,12 +719,12 @@ async function startWorkout(workoutId) {
         if (result && result.success) {
             showScreen('activeWorkout');
         } else {
-            tg.showAlert(result.error || 'Failed to start workout. Please try again.');
+            window.tg.showAlert(result.error || 'Failed to start workout. Please try again.');
             showScreen(appState.userRole === 'trainer' ? 'trainerDashboard' : 'clientDashboard');
         }
     } catch (error) {
         console.error('Start workout error:', error);
-        tg.showAlert('Error starting workout. Please try again.');
+        window.tg.showAlert('Error starting workout. Please try again.');
         showScreen(appState.userRole === 'trainer' ? 'trainerDashboard' : 'clientDashboard');
     }
 }
