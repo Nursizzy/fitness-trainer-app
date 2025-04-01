@@ -34,44 +34,6 @@ let appState = {
 // Make appState available to other modules
 window.appState = appState;
 
-// DOM Elements
-const screens = {
-    loading: document.getElementById('loading-screen'),
-    auth: document.getElementById('auth-screen'),
-    trainerDashboard: document.getElementById('trainer-dashboard'),
-    clientDashboard: document.getElementById('client-dashboard'),
-    activeWorkout: document.getElementById('active-workout'),
-    createProgram: document.getElementById('create-program'),
-    addExercise: document.getElementById('add-exercise')
-};
-
-// Make showScreen available globally
-window.showScreen = showScreen;
-
-// Show/hide screens
-function showScreen(screenName) {
-    console.log(`Showing screen: ${screenName}`);
-    // Hide all screens
-    Object.values(screens).forEach(screen => {
-        if (screen) screen.classList.add('hidden');
-    });
-
-    // Show the requested screen
-    if (screens[screenName]) {
-        screens[screenName].classList.remove('hidden');
-    } else {
-        console.error(`Screen ${screenName} not found`);
-    }
-
-    // Update app state
-    appState.currentScreen = screenName;
-
-    // Update Telegram Web App settings based on current screen
-    if (tgAvailable) {
-        updateTelegramSettings(screenName);
-    }
-}
-
 // Update Telegram settings based on current screen
 function updateTelegramSettings(screenName) {
     if (!window.tg) return;
