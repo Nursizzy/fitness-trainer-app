@@ -216,8 +216,8 @@ function startRestTimer(duration) {
     // Get timer element
     const timerElement = document.getElementById('rest-timer');
 
-    // Set initial value
-    let timeLeft = duration;
+    // Set initial value (ensure positive value)
+    let timeLeft = Math.max(1, duration || 60);
     timerElement.textContent = timeLeft;
 
     // Start countdown

@@ -101,17 +101,6 @@ function setupTabNavigation() {
     });
 }
 
-// Initialize app
-function initApp() {
-    // Setup event listeners
-    setupEventListeners();
-
-    // Setup tab navigation
-    setupTabNavigation();
-
-    // Check if user is already authenticated
-    checkAuthentication();
-}
 
 // Setup event listeners
 function setupEventListeners() {
@@ -744,4 +733,33 @@ async function startWorkout(workoutId) {
 }
 
 // Start the app when DOM is fully loaded
-document.addEventListener('DOMContentLoaded', initApp);
+// Initialize app
+function initApp() {
+    // Setup event listeners
+    setupEventListeners();
+
+    // Setup tab navigation
+    setupTabNavigation();
+
+    // Check if user is already authenticated
+    checkAuthentication();
+}
+
+// Ensure we wait for both DOM and Telegram WebApp to be ready
+document.addEventListener('DOMContentLoaded', () => {
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+        // If Telegram WebApp already initialized, start app
+        if (tg.initDataUnsafe) {
+            initApp();
+        } else {
+            // Otherwise wait for Telegram WebApp to be ready
+            tg.onEvent('mainButtonClicked', () => {}); // Force initialization
+            setTimeout(initApp, 100); // Short delay to ensure WebApp is ready
+        }
+    } else {
+        console.error('Telegram WebApp not available');
+        document.getElementById('loading-screen').innerHTML =
+            '<p>Error: This app must be run within Telegram.</p>';
+    }
+});

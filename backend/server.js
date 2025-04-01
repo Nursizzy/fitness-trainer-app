@@ -9,28 +9,41 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// CORS configuration
 const corsOptions = {
     origin: [
         'https://web.telegram.org',
         'https://web.telegram.org/z/',
         'https://web.telegram.org/k/',
         'https://t.me',
-        '*' // Be cautious with this in production
-    ],
+        // Add your development domains here
+        process.env.NODE_ENV === 'development' ? '*' : null
+    ].filter(Boolean),
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 };
 
-// Middleware
 app.use(cors(corsOptions));
+
+// Middleware
 app.use(bodyParser.json());
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('MongoDB connected'))
-    .catch(err => console.error('MongoDB connection error:', err));
+// Import the DB connection module
+const connectDB = require('./db');
 
+// Connect to MongoDB
+connectDB()
+    .then(() => {
+        console.log('MongoDB connected');
+
+        // Start server only after successful DB connection
+        app.listen(PORT, '0.0.0.0', () => {
+            console.log(`Server running on port ${PORT}`);
+        });
+    })
+    .catch(err => {
+        console.error('MongoDB connection error:', err);
+        process.exit(1);
+    });
 // Import routes
 const authRoutes = require('./routes/authRoutes');
 const trainerRoutes = require('./routes/trainerRoutes');
@@ -57,11 +70,6 @@ app.use((err, req, res, next) => {
         success: false,
         error: 'Something went wrong!'
     });
-});
-
-// Start server
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on port ${PORT}`);
 });
 
 module.exports = app;

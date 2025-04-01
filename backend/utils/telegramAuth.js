@@ -1,13 +1,5 @@
-// Telegram authentication utility
 const crypto = require('crypto');
 
-/**
- * Validates initData received from Telegram Web App
- * See: https://core.telegram.org/bots/webapps#validating-data-received-via-the-web-app
- *
- * @param {string} initDataString The initData query string from Telegram
- * @returns {object|null} The validated user data or null if validation fails
- */
 function validateTelegramWebAppData(initDataString) {
     console.log('Raw initData:', initDataString);
 
@@ -53,8 +45,23 @@ function validateTelegramWebAppData(initDataString) {
         console.log('Calculated hash:', dataCheckString);
         console.log('Received hash:', hash);
 
-        // Verify the hash
-        if (dataCheckString !== hash) {
+        // Use timing-safe comparison to prevent timing attacks
+        // Convert both hashes to buffers of same length
+        const calculatedHashBuffer = Buffer.from(dataCheckString, 'hex');
+        const receivedHashBuffer = Buffer.from(hash, 'hex');
+
+        // Only compare if lengths match to avoid errors
+        let hashesMatch = calculatedHashBuffer.length === receivedHashBuffer.length;
+        if (hashesMatch) {
+            try {
+                hashesMatch = crypto.timingSafeEqual(calculatedHashBuffer, receivedHashBuffer);
+            } catch (e) {
+                console.error('Error in timing-safe comparison:', e);
+                hashesMatch = false;
+            }
+        }
+
+        if (!hashesMatch) {
             console.error('Hash validation failed');
             return null;
         }
