@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FitTrainer App</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link rel="stylesheet" href="styles/main.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
 <div id="app">
@@ -147,12 +147,12 @@
 
     <!-- Create Program Screen -->
     <div id="create-program" class="screen hidden">
-        <!-- Program creation form will go here -->
+        <!-- Program creation form will be dynamically injected by createProgram.js -->
     </div>
 
     <!-- Add Exercise Screen -->
     <div id="add-exercise" class="screen hidden">
-        <!-- Exercise creation form will go here -->
+        <!-- Exercise creation form will be dynamically injected by addExercise.js -->
     </div>
 </div>
 
@@ -161,6 +161,8 @@
 <script src="scripts/client.js"></script>
 <script src="scripts/trainer.js"></script>
 <script src="scripts/workout.js"></script>
-<script src="scripts/app.js?v=1.0.1"></script>
+<script src="scripts/addExercise.js"></script>
+<script src="scripts/createProgram.js"></script>
+<script src="scripts/app.js?v=1.0.2"></script>
 </body>
 </html>

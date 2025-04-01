@@ -196,13 +196,21 @@ function setupEventListeners() {
 
     if (createProgramBtn) {
         createProgramBtn.addEventListener('click', () => {
-            showScreen('createProgram');
+            // Use the function from createProgram.js
+            if (window.updateCreateProgramScreen) {
+                window.updateCreateProgramScreen();
+            }
+            showScreen('create-program');
         });
     }
 
     if (addExerciseBtn) {
         addExerciseBtn.addEventListener('click', () => {
-            showScreen('addExercise');
+            // Use the function from addExercise.js
+            if (window.updateAddExerciseScreen) {
+                window.updateAddExerciseScreen();
+            }
+            showScreen('add-exercise');
         });
     }
 }
@@ -618,6 +626,7 @@ function renderExercisesList(exercises) {
     });
 }
 
+
 // View exercise details (placeholder)
 function viewExerciseDetails(exerciseId) {
     showAlert('Exercise Details', 'Detailed exercise view is coming soon.');
@@ -721,6 +730,10 @@ function initApp() {
     // Check if user is already authenticated
     checkAuthentication();
 }
+
+// Make these functions available globally
+window.renderExercisesList = renderExercisesList;
+window.renderProgramsList = renderProgramsList;
 
 // Start the app when DOM is fully loaded
 document.addEventListener('DOMContentLoaded', function() {
