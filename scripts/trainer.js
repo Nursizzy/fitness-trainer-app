@@ -1,7 +1,6 @@
 // Trainer module for FitTrainer
 
 // API URL - local backend
-const API_BASE_URL = window.appConstants.API_BASE_URL;
 
 // Get auth token
 const getAuthToken = () => localStorage.getItem('fitTrainerAuthToken');
@@ -11,7 +10,7 @@ async function getClients() {
     try {
         const token = getAuthToken();
 
-        const response = await fetch(`${API_BASE_URL}/trainer/clients`, {
+        const response = await fetch(`${window.appConstants.API_BASE_URL}/trainer/clients`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -40,7 +39,7 @@ async function getClient(clientId) {
     try {
         const token = getAuthToken();
 
-        const response = await fetch(`${API_BASE_URL}/trainer/clients/${clientId}`, {
+        const response = await fetch(`${window.appConstants.API_BASE_URL}/trainer/clients/${clientId}`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -69,7 +68,7 @@ async function getPrograms() {
     try {
         const token = getAuthToken();
 
-        const response = await fetch(`${API_BASE_URL}/trainer/programs`, {
+        const response = await fetch(`${window.appConstants.API_BASE_URL}/trainer/programs`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -98,7 +97,7 @@ async function getProgram(programId) {
     try {
         const token = getAuthToken();
 
-        const response = await fetch(`${API_BASE_URL}/trainer/programs/${programId}`, {
+        const response = await fetch(`${window.appConstants.API_BASE_URL}/trainer/programs/${programId}`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -127,7 +126,7 @@ async function getExercises() {
     try {
         const token = getAuthToken();
 
-        const response = await fetch(`${API_BASE_URL}/trainer/exercises`, {
+        const response = await fetch(`${window.appConstants.API_BASE_URL}/trainer/exercises`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -156,7 +155,7 @@ async function createProgram(programData) {
     try {
         const token = getAuthToken();
 
-        const response = await fetch(`${API_BASE_URL}/trainer/programs`, {
+        const response = await fetch(`${window.appConstants.API_BASE_URL}/trainer/programs`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -186,7 +185,7 @@ async function addExercise(exerciseData) {
     try {
         const token = getAuthToken();
 
-        const response = await fetch(`${API_BASE_URL}/trainer/exercises`, {
+        const response = await fetch(`${window.appConstants.API_BASE_URL}/trainer/exercises`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -241,7 +240,7 @@ async function assignClient(clientId) {
     try {
         const token = getAuthToken();
 
-        const response = await fetch(`${API_BASE_URL}/trainer/clients/${clientId}/assign`, {
+        const response = await fetch(`${window.appConstants.API_BASE_URL}/trainer/clients/${clientId}/assign`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -270,7 +269,7 @@ async function assignProgram(clientId, programId) {
     try {
         const token = getAuthToken();
 
-        const response = await fetch(`${API_BASE_URL}/trainer/clients/${clientId}/programs/${programId}`, {
+        const response = await fetch(`${window.appConstants.API_BASE_URL}/trainer/clients/${clientId}/programs/${programId}`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -299,7 +298,7 @@ async function createWorkout(workoutData) {
     try {
         const token = getAuthToken();
 
-        const response = await fetch(`${API_BASE_URL}/workout`, {
+        const response = await fetch(`${window.appConstants.API_BASE_URL}/workout`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -329,7 +328,7 @@ async function getAnalytics() {
     try {
         const token = getAuthToken();
 
-        const response = await fetch(`${API_BASE_URL}/trainer/analytics`, {
+        const response = await fetch(`${window.appConstants.API_BASE_URL}/trainer/analytics`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,

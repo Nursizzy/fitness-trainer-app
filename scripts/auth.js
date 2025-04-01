@@ -1,7 +1,5 @@
 // Authentication module for FitTrainer
 
-const API_BASE_URL = window.appConstants.API_BASE_URL;
-
 // Use the globally available tg instance
 const tg = window.tg;
 
@@ -16,7 +14,7 @@ function isAuthenticated() {
 // Login user
 async function login(userData) {
     try {
-        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        const response = await fetch(`${window.appConstants.API_BASE_URL}/auth/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -48,7 +46,7 @@ async function login(userData) {
 // Register new user
 async function register(userData) {
     try {
-        const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        const response = await fetch(`${window.appConstants.API_BASE_URL}/auth/register`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -100,7 +98,7 @@ async function authenticateWithTelegram(role) {
         }
 
         // Send to backend for verification
-        const response = await fetch(`${API_BASE_URL}/auth/telegram`, {
+        const response = await fetch(`${window.appConstants.API_BASE_URL}/auth/telegram`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -171,9 +169,9 @@ async function getCurrentUser() {
         const role = localStorage.getItem('userRole');
 
         if (role === 'trainer') {
-            endpoint = `${API_BASE_URL}/trainer/profile`;
+            endpoint = `${window.appConstants.API_BASE_URL}/trainer/profile`;
         } else if (role === 'client') {
-            endpoint = `${API_BASE_URL}/client/profile`;
+            endpoint = `${window.appConstants.API_BASE_URL}/client/profile`;
         } else {
             throw new Error('Unknown user role');
         }

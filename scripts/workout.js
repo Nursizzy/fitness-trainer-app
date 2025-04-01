@@ -1,7 +1,5 @@
 // Workout module for FitTrainer
 
-// API URL - local backend
-const API_BASE_URL = window.appConstants.API_BASE_URL;
 
 // Get auth token
 const getAuthToken = () => localStorage.getItem('fitTrainerAuthToken');
@@ -21,7 +19,7 @@ async function startWorkoutSession(workoutId) {
         // Fetch the workout from the backend
         const token = getAuthToken();
 
-        const response = await fetch(`${API_BASE_URL}/workout/${workoutId}/start`, {
+        const response = await fetch(`${window.appConstants.API_BASE_URL}/workout/${workoutId}/start`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -343,7 +341,7 @@ async function completeWorkoutSession() {
         // Send completion data to backend
         const token = getAuthToken();
 
-        const response = await fetch(`${API_BASE_URL}/workout/${currentWorkout.id}/complete`, {
+        const response = await fetch(`${window.appConstants.API_BASE_URL}/workout/${currentWorkout.id}/complete`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
