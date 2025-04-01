@@ -726,22 +726,25 @@ function initApp() {
 document.addEventListener('DOMContentLoaded', function() {
     console.log("DOM loaded, starting app initialization");
 
-    // In standalone mode, don't wait for Telegram
-    if (appState.standaloneMode) {
-        console.log("Running in standalone mode, initializing immediately");
+    // Check if Telegram object exists but don't wait for ready event
+    if (window.Telegram && window.Telegram.WebApp) {
+        console.log("Telegram WebApp found, initializing immediately");
+        window.tg = window.Telegram.WebApp;
+        tgAvailable = true;
+
+        try {
+            // Tell Telegram we're ready
+            window.tg.ready();
+            window.tg.expand();
+        } catch (e) {
+            console.error("Error calling Telegram ready methods:", e);
+        }
+
+        // Initialize without waiting for the ready callback
         initApp();
     } else {
-        // Wait for Telegram WebApp to be fully ready
-        if (window.tg && window.tg.ready) {
-            console.log("Waiting for Telegram WebApp to be ready");
-            window.tg.ready(() => {
-                console.log("Telegram WebApp ready, initializing app");
-                initApp();
-            });
-        } else {
-            console.error("Telegram WebApp not available, falling back to standalone mode");
-            appState.standaloneMode = true;
-            initApp();
-        }
+        console.log("Telegram WebApp not available, falling back to standalone mode");
+        appState.standaloneMode = true;
+        initApp();
     }
 });
