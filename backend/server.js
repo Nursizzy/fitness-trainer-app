@@ -15,8 +15,8 @@ const corsOptions = {
         'https://web.telegram.org/z/',
         'https://web.telegram.org/k/',
         'https://t.me',
-        // Add your development domains here
-        process.env.NODE_ENV === 'development' ? '*' : null
+        'https://nursizzy.github.io',
+        '*',
     ].filter(Boolean),
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
