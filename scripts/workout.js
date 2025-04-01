@@ -1,7 +1,7 @@
 // Workout module for FitTrainer
 
 // API URL - local backend
-const API_BASE_URL = 'https://fitness-trainer-app.onrender.com/api';
+const API_BASE_URL = window.appConstants.API_BASE_URL;
 
 // Get auth token
 const getAuthToken = () => localStorage.getItem('fitTrainerAuthToken');

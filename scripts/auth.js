@@ -1,10 +1,9 @@
 // Authentication module for FitTrainer
 
-// API URL - local backend
-const API_BASE_URL = 'https://fitness-trainer-app.onrender.com/api';
+const API_BASE_URL = window.appConstants.API_BASE_URL;
 
-// Telegram instance
-const tg = window.Telegram.WebApp;
+// Use the globally available tg instance
+const tg = window.tg;
 
 // Store auth token
 let authToken = localStorage.getItem('fitTrainerAuthToken') || null;

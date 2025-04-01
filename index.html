@@ -156,11 +156,22 @@
     </div>
 </div>
 
-<!-- JavaScript -->
-<script src="scripts/app.js"></script>
+<!-- Scripts with corrected loading order -->
+<script>
+    // Define shared constants to avoid redeclaration
+    window.appConstants = {
+        API_BASE_URL: 'https://fitness-trainer-app.onrender.com/api'
+    };
+
+    // Make Telegram WebApp globally available
+    window.tg = window.Telegram.WebApp;
+</script>
+
+<!-- Load modules in proper order -->
 <script src="scripts/auth.js"></script>
-<script src="scripts/trainer.js"></script>
 <script src="scripts/client.js"></script>
+<script src="scripts/trainer.js"></script>
 <script src="scripts/workout.js"></script>
+<script src="scripts/app.js"></script>
 </body>
 </html>

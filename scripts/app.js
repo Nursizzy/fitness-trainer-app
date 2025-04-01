@@ -746,20 +746,22 @@ function initApp() {
 }
 
 // Ensure we wait for both DOM and Telegram WebApp to be ready
-document.addEventListener('DOMContentLoaded', () => {
-    const tg = window.Telegram?.WebApp;
-    if (tg) {
-        // If Telegram WebApp already initialized, start app
-        if (tg.initDataUnsafe) {
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if all required modules are loaded
+    if (window.tg && window.auth && window.client &&
+        window.trainer && window.workout) {
+        // Wait for Telegram WebApp to be fully ready
+        window.tg.ready(() => {
+            console.log("Telegram WebApp and all modules are ready, initializing app...");
             initApp();
-        } else {
-            // Otherwise wait for Telegram WebApp to be ready
-            tg.onEvent('mainButtonClicked', () => {}); // Force initialization
-            setTimeout(initApp, 100); // Short delay to ensure WebApp is ready
-        }
+        });
     } else {
-        console.error('Telegram WebApp not available');
-        document.getElementById('loading-screen').innerHTML =
-            '<p>Error: This app must be run within Telegram.</p>';
+        console.error("Required modules not loaded:", {
+            tg: !!window.tg,
+            auth: !!window.auth,
+            client: !!window.client,
+            trainer: !!window.trainer,
+            workout: !!window.workout
+        });
     }
 });
