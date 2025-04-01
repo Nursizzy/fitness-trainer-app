@@ -2,8 +2,7 @@
 
 // API URL - local backend
 
-// Get auth token
-const getAuthToken = () => localStorage.getItem('fitTrainerAuthToken');
+
 
 // Get trainer's clients
 async function getClients() {

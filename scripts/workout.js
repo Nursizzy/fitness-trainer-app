@@ -1,9 +1,4 @@
 // Workout module for FitTrainer
-
-
-// Get auth token
-const getAuthToken = () => localStorage.getItem('fitTrainerAuthToken');
-
 // Current workout session data
 let currentWorkout = null;
 let currentExerciseIndex = 0;

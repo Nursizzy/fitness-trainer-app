@@ -2,7 +2,7 @@
 
 // Use the globally available Telegram WebApp instance instead of redefining it
 // const tg = window.Telegram.WebApp; // Remove this line
-const tg = window.tg; // Use the globally available instance
+let tg = window.tg;
 
 // Tell Telegram we're ready
 tg.ready();

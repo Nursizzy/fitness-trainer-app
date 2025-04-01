@@ -4,7 +4,7 @@
 
 
 // Get auth token
-const getAuthToken = () => localStorage.getItem('fitTrainerAuthToken');
+window.getAuthToken = () => localStorage.getItem('fitTrainerAuthToken');
 
 // Get client's workouts
 async function getWorkouts() {
